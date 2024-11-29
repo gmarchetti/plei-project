@@ -1,6 +1,7 @@
 import torch
 import random
 from prompts_builder import PromptBuilder
+from parsers.gemma_parser import GemmaParser
 from transformers import pipeline
 from datasets import load_dataset
 
@@ -14,7 +15,7 @@ dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev
 
 
 
-random_entries = dataset.shuffle().select(range(4))
+random_entries = dataset.shuffle().select(range(1))
 
 prompt_builder = PromptBuilder()
 
@@ -32,13 +33,20 @@ for model_key in model_names:
         sentences = entry["lex"]["text"]
         original_triple = entry["original_triple_sets"]["otriple_set"]
         modified_triple = entry["modified_triple_sets"]["mtriple_set"]
-        
+        number_triplets = entry["size"]
+        print(">>>>")
         print(f"Testing sentences: {sentences}, with model {model_key}")
-        # print(prompt_builder.gen_prompt_with_example(sentences)[0]["content"])
-        outputs = pipe(prompt_builder.gen_prompt_with_example(sentences), max_new_tokens=256)
+        print("---")
+        print(f"Number of triplets expected: {number_triplets}")
+        print("---")
+        
+        outputs = pipe(prompt_builder.gen_prompt_with_example(sentences, number_triplets), max_new_tokens=512)
         generated_response = outputs[0]["generated_text"][-1]["content"].strip()
         
         print(generated_response)
-
+        # print(GemmaParser.extract_triples(generated_response))
+        print("---")
         print(f"Original triple was: {original_triple}")
         print(f"Modified triple was: {modified_triple}")
+        print("---\n")
+

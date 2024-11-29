@@ -1,18 +1,17 @@
 prompt_base_with_example = """ 
-Using the following example of a sentences:
+
+I want you to identify the object, subject and relationship between them from a set of sentences.
+
+Using the following sentence as an example:
 
 1. The Andrews County Airport is owned by Andrews County, Texas.
 
-and this output example:
+The object would be Andrews_County,_Texas, the subject Andrews_County_Airport and the relationship would be owner. Note that the
+object and subject must be different entities!
 
-"object": "Andrews_County,_Texas",
-"property": "owner",
-"subject": "Andrews_County_Airport"
+Now do the same process for the following sentences, creating AT MOST {num} triples, even if there is more than one sentence:
 
-
-extract a single triple with the object, subject and relation from the following sentences:
-
-{}
+{sent}
 """
 
 zero_shot = [
@@ -23,13 +22,13 @@ The output should be in json format and there should be no white spaces between 
 
 class PromptBuilder:
     
-    def gen_prompt_with_example(self, sentences):
+    def gen_prompt_with_example(self, sentences, num_triplets):
         concat_sentence = ""
         
         for sentence in sentences:
             concat_sentence += sentence + "\n"
         
-        formated_prompt = prompt_base_with_example.format(concat_sentence)
+        formated_prompt = prompt_base_with_example.format(sent=concat_sentence, num=num_triplets)
 
         return [{"role": "user", "content": formated_prompt}
 ]
