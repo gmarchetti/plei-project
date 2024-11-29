@@ -30,5 +30,6 @@ class PromptBuilder:
         
         formated_prompt = prompt_base_with_example.format(sent=concat_sentence, num=num_triplets)
 
-        return [{"role": "user", "content": formated_prompt}
-]
+        return [
+            {"role": "user", "content": formated_prompt}
+        ]

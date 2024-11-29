@@ -15,7 +15,7 @@ dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev
 
 
 
-random_entries = dataset.shuffle().select(range(1))
+random_entries = dataset.shuffle().select(range(3))
 
 prompt_builder = PromptBuilder()
 
@@ -40,11 +40,18 @@ for model_key in model_names:
         print(f"Number of triplets expected: {number_triplets}")
         print("---")
         
-        outputs = pipe(prompt_builder.gen_prompt_with_example(sentences, number_triplets), max_new_tokens=512)
+        chat_messages = prompt_builder.gen_prompt_with_example(sentences, number_triplets)
+
+        outputs = pipe(chat_messages, max_new_tokens=512)
         generated_response = outputs[0]["generated_text"][-1]["content"].strip()
+        chat_messages.append({"role" : "assistant", "content": generated_response})
+        chat_messages.append({"role": "user", "content": "Now format the your answer into a JSON"})
         
-        print(generated_response)
-        # print(GemmaParser.extract_triples(generated_response))
+        print("---")
+        outputs = pipe(chat_messages, max_new_tokens=512)
+        generated_response = outputs[0]["generated_text"][-1]["content"].strip()
+        print(GemmaParser.extract_triples(generated_response))
+
         print("---")
         print(f"Original triple was: {original_triple}")
         print(f"Modified triple was: {modified_triple}")
