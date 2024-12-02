@@ -36,20 +36,20 @@ import json
 
 class GemmaParser:
     
-    def extract_triples(answer):
-        json_pattern = r'```json([.\w\W]*)```'
-        json_string = re.findall(json_pattern, answer)
-        print(answer)
-        
-        triples_objects = json.loads(json_string[0])
+  def extract_triples(answer):
+    json_pattern = r'[\{\[][.\w\W]*[\]\}]'
+    json_string = re.findall(json_pattern, answer)
+    
+    triples_objects = json.loads(json_string[0])
+    triples = []
 
-        triples = []
-
-        for triple in triples_objects:
-            triples.append(f"{triple["subject"]} ! {triple["relationship"]} | {triple["object"]}")
-
-        return triples
+    if isinstance(triples_objects, list):
+      for triple in triples_objects:
+        triples.append(f"{triple["subject"]} ! {triple["relationship"]} | {triple["object"]}")
+    else:
+      triples.append(f"{triples_objects["subject"]} | {triples_objects["relationship"]} | {triples_objects["object"]}")
+    return triples
     
 
 if __name__ == '__main__':
-    print(GemmaParser.extract_triples(sample_answers[1]))
+  print(GemmaParser.extract_triples(sample_answers[1]))
