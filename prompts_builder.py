@@ -12,6 +12,8 @@ object and subject must be different entities!
 Now do the same process for the following sentences, creating AT MOST {num} triples, even if there is more than one sentence:
 
 {sent}
+
+The resulting triplet should be inside a JSON object.
 """
 
 zero_shot = [
