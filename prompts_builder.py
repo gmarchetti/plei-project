@@ -9,11 +9,9 @@ Using the following sentence as an example:
 The object would be Andrews_County,_Texas, the subject Andrews_County_Airport and the relationship would be owner. Note that the
 object and subject must be different entities!
 
-Now do the same process for the following sentences, creating AT MOST {num} triples, even if there is more than one sentence:
+Now for the next sentences, output a JSON object following the same process, creating AT MOST {num} triples, even if there is more than one sentence:
 
 {sent}
-
-The resulting triplet should be inside a JSON object.
 """
 
 zero_shot = [
