@@ -3,8 +3,9 @@ parsed_test_triple = ['Julia Morgan | is | architect', 'Julia Morgan | designed 
 import xml.etree.ElementTree as ElementTree
 
 class ResultsBuilder:
-    def __init__(self, model_name) -> None:
+    def __init__(self, model_name, prompt_type="single") -> None:
         self.__model_name = model_name
+        self.__prompt_type = prompt_type
         self.__sample_root = ElementTree.fromstring("<benchmark> </benchmark>")
         self.__result_root = ElementTree.fromstring("<benchmark> </benchmark>")
 
@@ -54,8 +55,8 @@ class ResultsBuilder:
     def write_results_files(self):
         result_tree = ElementTree.ElementTree(self.__result_root)
         samples_tree = ElementTree.ElementTree(self.__sample_root)
-        result_tree.write(f"./results/{self.__model_name}-candidates.xml")
-        samples_tree.write(f"./results/{self.__model_name}-references.xml")
+        result_tree.write(f"./results/{self.__model_name}-{self.__prompt_type}-candidates.xml")
+        samples_tree.write(f"./results/{self.__model_name}-{self.__prompt_type}-references.xml")
 
 if __name__ == '__main__':
     results = ResultsBuilder("sample")

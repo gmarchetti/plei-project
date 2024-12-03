@@ -20,7 +20,7 @@ relation_extraction_prompt = """Given this list of phrases: {sent} and using the
 
 Additional instructions that you have to follow:
 Each relation between entities should use only 1 word
-Your output should follow the format: {{"object": "Entity 1", "relationship": "Relationship Description", "subject": "Entity 2"}}"""
+Your output should follow the format: {{"object":"Entity 1", "relationship":"Relationship Description", "subject":"Entity 2"}}"""
 
 class PromptBuilder:
     def concatenate_sentences(sentences):
