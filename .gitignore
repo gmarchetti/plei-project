@@ -162,4 +162,6 @@ cython_debug/
 #.idea/
 
 results/sample*
+results/gemma-2-candidates.xml
+results/gemma-2-references.xml
 prompt-sample.txt

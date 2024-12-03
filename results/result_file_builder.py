@@ -38,10 +38,11 @@ class ResultsBuilder:
         new_entry.set("eid", str(eid))
         
         generated_triples = ElementTree.Element("modifiedtripleset")
-        for entry in list_of_modified_triplets:
-            new_mtriple = ElementTree.Element("mtriple")
-            new_mtriple.text = entry
-            generated_triples.append(new_mtriple)
+        for entry_set in list_of_modified_triplets:
+            for entry in entry_set:
+                new_mtriple = ElementTree.Element("mtriple")
+                new_mtriple.text = entry
+                generated_triples.append(new_mtriple)
 
         new_entry.append(generated_triples)
         entry_element.append(new_entry)

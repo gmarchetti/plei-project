@@ -45,7 +45,10 @@ class GemmaParser:
 
     if isinstance(triples_objects, list):
       for triple in triples_objects:
-        triples.append(f"{triple["subject"]} ! {triple["relationship"]} | {triple["object"]}")
+        triples.append(f"{triple["subject"]} | {triple["relationship"]} | {triple["object"]}")
+    elif isinstance(triples_objects, dict) and "sentences" in triples_objects.keys():
+      for triple in triples_objects["sentences"]:
+        triples.append(f"{triple["subject"]} | {triple["relationship"]} | {triple["object"]}")
     else:
       triples.append(f"{triples_objects["subject"]} | {triples_objects["relationship"]} | {triples_objects["object"]}")
     return triples

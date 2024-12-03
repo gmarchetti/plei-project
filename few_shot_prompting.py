@@ -4,6 +4,7 @@ from prompts_builder import PromptBuilder
 from parsers.gemma_parser import GemmaParser
 from transformers import pipeline
 from datasets import load_dataset
+from results.result_file_builder import ResultsBuilder
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -29,11 +30,14 @@ for model_key in model_names:
         device="cuda",  # replace with "mps" to run on a Mac device
     )
     
+    results = ResultsBuilder(model_key)
+
     for entry in random_entries:
         sentences = entry["lex"]["text"]
         original_triple = entry["original_triple_sets"]["otriple_set"]
         modified_triple = entry["modified_triple_sets"]["mtriple_set"]
         number_triplets = entry["size"]
+        
         print(">>>>")
         print(f"Testing sentences: {sentences}, with model {model_key}")
         print("---")
@@ -50,10 +54,17 @@ for model_key in model_names:
         print("---")
         outputs = pipe(chat_messages, max_new_tokens=512)
         generated_response = outputs[0]["generated_text"][-1]["content"].strip()
-        print(GemmaParser.extract_triples(generated_response))
+        print(generated_response)
+        generated_triplets = GemmaParser.extract_triples(generated_response)
 
+        print(generated_triplets)
         print("---")
         print(f"Original triple was: {original_triple}")
         print(f"Modified triple was: {modified_triple}")
         print("---\n")
+
+        results.add_result(generated_triplets, entry["category"], entry["eid"])
+        results.add_modified_triplets(modified_triple, entry["category"], entry["eid"])
+
+    results.write_results_files()
 
