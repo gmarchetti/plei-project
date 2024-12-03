@@ -3,9 +3,6 @@ parsed_test_triple = ['Julia Morgan | is | architect', 'Julia Morgan | designed 
 import xml.etree.ElementTree as ElementTree
 
 class ResultsBuilder:
-    # def __new__(self, model_name):
-    #     self.__model_name = model_name
-
     def __init__(self, model_name) -> None:
         self.__model_name = model_name
         self.__sample_root = ElementTree.fromstring("<benchmark> </benchmark>")
