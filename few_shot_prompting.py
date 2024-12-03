@@ -6,7 +6,8 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 2
+ENTRIES_TO_USE = 100
+BATCH_SIZE = 16
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -16,9 +17,9 @@ model_names = {
 
 dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev", trust_remote_code=True)
 
-LOG_DEBUG = True
+LOG_DEBUG = False
 LOG_INFO = True
-LOG_ERROR = True
+LOG_ERROR = False
 
 random_entries = dataset.shuffle().select(range(ENTRIES_TO_USE))
 
@@ -67,7 +68,7 @@ for model_key in model_names:
 
     start_time = time.time()    
 
-    for outputs in pipe(promptsGenerator(), max_new_tokens=512, batch_size=1):
+    for outputs in pipe(promptsGenerator(), max_new_tokens=512, batch_size=BATCH_SIZE):
         logInfo(f"Processing sentence {sentence_count} of {ENTRIES_TO_USE}")
         generated_response = outputs[0]["generated_text"].strip()
         
