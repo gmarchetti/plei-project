@@ -6,7 +6,7 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 4
+ENTRIES_TO_USE = 30
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -16,9 +16,9 @@ model_names = {
 
 dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev", trust_remote_code=True)
 
-LOG_DEBUG = True
+LOG_DEBUG = False
 LOG_INFO = True
-
+LOG_ERROR = True
 
 random_entries = dataset.shuffle().select(range(ENTRIES_TO_USE))
 
@@ -30,6 +30,10 @@ def logDebug(msg):
 
 def logInfo(msg):
     if LOG_INFO:
+        print(msg)
+
+def logError(msg):
+    if LOG_ERROR:
         print(msg)
 
 for model_key in model_names:
@@ -66,17 +70,19 @@ for model_key in model_names:
         
         logDebug("---")
         logDebug(generated_response)
+        try:
+            generated_triplets = GemmaParser.extract_triples(generated_response)
 
-        generated_triplets = GemmaParser.extract_triples(generated_response)
+            logDebug(generated_triplets)
+            logDebug("---")
+            logDebug(f"Original triple was: {original_triple}")
+            logDebug(f"Modified triple was: {modified_triple}")
+            logDebug("---\n")
 
-        logDebug(generated_triplets)
-        logDebug("---")
-        logDebug(f"Original triple was: {original_triple}")
-        logDebug(f"Modified triple was: {modified_triple}")
-        logDebug("---\n")
-
-        results.add_result(generated_triplets, entry["category"], entry["eid"])
-        results.add_modified_triplets(modified_triple, entry["category"], entry["eid"])
+            results.add_result(generated_triplets, entry["category"], entry["eid"])
+            results.add_modified_triplets(modified_triple, entry["category"], entry["eid"])
+        except:
+            logError(f"Failed to process response: {generated_response}")
 
         sentence_count += 1
 
