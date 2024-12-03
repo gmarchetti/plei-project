@@ -35,7 +35,30 @@ import re
 import json
 
 class GemmaParser:
+  
+  def extract_entities(answer):
+    json_pattern = r'[\{\[][.\w\W]*[\]\}]'
+    json_string = re.findall(json_pattern, answer)
     
+    json_object = json.loads(json_string[0])
+
+    entities_dict = {}
+
+    for entry in json_object:
+      entity_name = None
+      
+      if isinstance(entry, dict):
+        entity_name = entry["entity"]
+      elif isinstance(entry, str):
+        entity_name = entry
+      
+      if entity_name != None:
+        entities_dict[entity_name] = 1
+
+    entity_list = entities_dict.keys()
+
+    return entity_list
+
   def extract_triples(answer):
     json_pattern = r'[\{\[][.\w\W]*[\]\}]'
     json_string = re.findall(json_pattern, answer)

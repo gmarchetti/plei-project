@@ -14,21 +14,36 @@ Now for the next sentences, output a JSON object following the same process, cre
 {sent}
 """
 
-zero_shot = [
-    {"role": "user",
-     "content": """I want to create a Knowledge Graph, so extract the triplet object, property and subject from the sentence {}
-The output should be in json format and there should be no white spaces between the tokens."""}
-]
+entity_extraction_prompt = """I want you to list  all entities from the following sentences: {sent}. Your output should be a JSON array"""
+
+relation_extraction_prompt = """Given this list of phrases: {sent} and using these entities: {ents}, I want you to describe the relation between each one of them. 
+
+Additional instructions that you have to follow:
+Each relation between entities should use only 1 word
+Your output should follow the format: {{"object": "Entity 1", "relationship": "Relationship Description", "subject": "Entity 2"}}"""
 
 class PromptBuilder:
-    
-    def gen_prompt_with_example(self, sentences, num_triplets):
-        concat_sentence = ""
-        
+    def concatenate_sentences(sentences):
+        concat_sentence = "\n"
+        idx = 1
+
         for sentence in sentences:
-            concat_sentence += sentence + "\n"
+            concat_sentence += f"{idx}. " + sentence + "\n"
+            idx += 1
         
-        formated_prompt = prompt_base_with_example.format(sent=concat_sentence, num=num_triplets)
+        return concat_sentence
+
+    def gen_prompt_for_relations(self, sentences, entities):
+        concatenated_sentences = PromptBuilder.concatenate_sentences(sentences)
+        concatenated_entities = PromptBuilder.concatenate_sentences(entities)
+
+        return relation_extraction_prompt.format(sent=concatenated_sentences, ents=concatenated_entities)
+
+    def gen_prompt_for_extraction(self, sentences):
+        return entity_extraction_prompt.format(sent=PromptBuilder.concatenate_sentences(sentences))
+
+    def gen_prompt_with_example(self, sentences, num_triplets):        
+        formated_prompt = prompt_base_with_example.format(sent=PromptBuilder.concatenate_sentences(sentences), num=num_triplets)
 
         return [
             {"role": "user", "content": formated_prompt}
