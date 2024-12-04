@@ -163,4 +163,6 @@ cython_debug/
 
 results/sample*
 results/gemma-2*
+results/qwen*
+results/llama*
 prompt-sample.txt
