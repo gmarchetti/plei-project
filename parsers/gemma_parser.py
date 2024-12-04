@@ -131,7 +131,7 @@ Here's a breakdown of the relationships:
 import re
 import json
 import logging
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class GemmaParser:
@@ -163,7 +163,7 @@ class GemmaParser:
     return entity_list
 
   def extract_triples(answer):
-    json_section_pattern = r'[`]+[.\w\W]*[`]+'
+    json_section_pattern = r'```json[^`]*```'
     json_section = re.findall(json_section_pattern, answer) 
 
     logger.debug("--->>> JSON Section")
@@ -190,4 +190,4 @@ class GemmaParser:
     
 
 if __name__ == '__main__':
-  print(GemmaParser.extract_triples(sample_answers[3]))
+  print(GemmaParser.extract_triples(sample_answers[1]))
