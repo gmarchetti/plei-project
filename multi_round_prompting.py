@@ -8,8 +8,8 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 32
-BATCH_SIZE = 8
+ENTRIES_TO_USE = 30
+BATCH_SIZE = 10
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -80,10 +80,13 @@ for model_key in model_names:
         logger.debug("---")
         logger.debug(generated_response)
         
-        entities_array.append(GemmaParser.extract_entities(generated_response))
+        try:
+            entities_array.append(GemmaParser.extract_entities(generated_response))
 
-        logger.debug(entities_array[sentence_count])
-
+            logger.debug(entities_array[-1])
+        except:
+            logging.exception(f">>> Failed to process entities <<<\n{generated_response}")
+        
         sentence_count += 1
 
     sentence_count = 0
