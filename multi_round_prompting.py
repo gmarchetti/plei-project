@@ -43,12 +43,13 @@ def entities_prompts_generator():
 
         yield prompt_builder.gen_prompt_for_extraction(sentences)
 
-def relation_prompts_generator(entities_list):
-    entity_index = 0
-    for entry in random_entries:
+def relation_prompts_generator(entities_list, processed_entries):
+    
+    for idx in range(0, len(entities_list)):
+        entry = random_entries[processed_entries[idx]]
         sentences = entry["lex"]["text"]
-        entities = entities_list[entity_index]
-        entity_index += 1
+        entities = entities_list[idx]
+        
         logger.debug(">>>>")
         logger.debug(f"Testing sentences: {sentences}, with model {model_key}")
         logger.debug("---")
@@ -72,6 +73,8 @@ for model_key in model_names:
     start_time = time.time()    
     
     entities_array = []
+    processed_entities = []
+    entities_errors = 0
 
     for outputs in pipe(entities_prompts_generator(), max_new_tokens=512, batch_size=BATCH_SIZE):
         logger.info(f"Processing entities from {sentence_count} of {ENTRIES_TO_USE}")
@@ -82,16 +85,17 @@ for model_key in model_names:
         
         try:
             entities_array.append(GemmaParser.extract_entities(generated_response))
-
+            processed_entities.append(sentence_count)
             logger.debug(entities_array[-1])
         except:
             logging.exception(f">>> Failed to process entities <<<\n{generated_response}")
-        
+            entities_errors += 1
+
         sentence_count += 1
 
     sentence_count = 0
     extract_errors = 0
-    for outputs in pipe(relation_prompts_generator(entities_array), max_new_tokens=512, batch_size=BATCH_SIZE):
+    for outputs in pipe(relation_prompts_generator(entities_array, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE):
         logger.info(f"Processing relations from {sentence_count} of {ENTRIES_TO_USE}")
         generated_response = outputs[0]["generated_text"].strip()
         
@@ -111,6 +115,6 @@ for model_key in model_names:
 
         sentence_count += 1
     logger.info(f"Total processing time: {time.time() - start_time}s")
-    logger.info(f"Total of {extract_errors} entries failed to be processed")
+    logger.info(f"Total of {extract_errors + entities_errors} entries failed to be processed")
     results.write_results_files()
 
