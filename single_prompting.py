@@ -7,8 +7,8 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 1000
-BATCH_SIZE = 16
+ENTRIES_TO_USE = 20
+BATCH_SIZE = 1
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",

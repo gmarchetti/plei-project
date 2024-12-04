@@ -14,13 +14,16 @@ Now for the next sentences, output a JSON object following the same process, cre
 {sent}
 """
 
-entity_extraction_prompt = """I want you to list  all entities from the following sentences: {sent}. Your output should be a JSON array"""
+entity_extraction_prompt = """You are working in an Entity Identification Task. 
+I want you to list  all entities from the following sentences: {sent}. 
+Your output should be a JSON array"""
 
-relation_extraction_prompt = """Given this list of phrases: {sent} and using these entities: {ents}, I want you to describe the relation between each one of them. 
+relation_extraction_prompt = """You are working in an Entity Relation Identification Task.
+Given this list of phrases: {sent} and using these entities: {ents}, I want you to describe the relation between each one of them. 
 
 Additional instructions that you have to follow:
-Each relation between entities should use only 1 word
-Your output should follow the format: {{"object":"Entity 1", "relationship":"Relationship Description", "subject":"Entity 2"}}"""
+Each relation between entities should at most 3 word
+Your output should follow the format: ***Entity | Relationship | Entity 2 ***"""
 
 class PromptBuilder:
     def concatenate_sentences(sentences):

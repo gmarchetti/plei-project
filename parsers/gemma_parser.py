@@ -126,12 +126,22 @@ Here's a breakdown of the relationships:
 * **Adam McQuaid** was **Drafted** by the **Columbus Blue Jackets**.
 * **Columbus Blue Jackets** drafted **Adam McQuaid**.
 * **Adam McQuaid** plays for the **Boston Bruins**.
+""",
+"""
+Your output should follow the format: ***Entity | Relationship | Entity 2 ***
+
+Here's the output for the given phrases:
+
+**1. Aleksandr Prudnikov | Played for | FC Spartak Moscow**
+**2. Aleksandr Prudnikov | Is attached to | FC Spartak Moscow**
+**3. Aleksandr Prudnikov | Played for | FC Spartak Moscow**
+**4. Aleksandr Prudnikov | Plays for | FC Kuban Krasnodar** 
 """]
 
 import re
 import json
 import logging
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class GemmaParser:
@@ -162,6 +172,29 @@ class GemmaParser:
 
     return entity_list
 
+  def extract_triples_from_lines(answer):
+    line_pattern = r'^[*]+.*'
+    triples_line = re.findall(line_pattern, answer, re.RegexFlag.M)
+
+    logger.debug("--->>> Lines section")
+    logger.debug(triples_line)
+
+    triples = []
+    for line in triples_line:
+      edge_pattern = r'[*]+\d?\.?'
+      cleaned_line = re.sub(edge_pattern, "", line)
+      
+      logger.debug(cleaned_line)
+      composite_word_patter = r'\b\ \b'
+      space_for_underscore = re.sub(composite_word_patter, "_", cleaned_line)
+
+      logger.debug(space_for_underscore)
+
+      triples.append(space_for_underscore)
+    
+    return triples
+
+
   def extract_triples(answer):
     json_section_pattern = r'```json[^`]*```'
     json_section = re.findall(json_section_pattern, answer) 
@@ -190,4 +223,4 @@ class GemmaParser:
     
 
 if __name__ == '__main__':
-  print(GemmaParser.extract_triples(sample_answers[1]))
+  print(GemmaParser.extract_triples_from_lines(sample_answers[-1]))

@@ -8,8 +8,8 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 30
-BATCH_SIZE = 10
+ENTRIES_TO_USE = 3
+BATCH_SIZE = 1
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -19,7 +19,7 @@ model_names = {
 
 dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev", trust_remote_code=True)
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 random_entries = dataset.shuffle().select(range(ENTRIES_TO_USE))
@@ -103,7 +103,7 @@ for model_key in model_names:
         logger.debug(generated_response)
         
         try:
-            generated_triplets = GemmaParser.extract_triples(generated_response)
+            generated_triplets = GemmaParser.extract_triples_from_lines(generated_response)
 
             logger.debug(generated_triplets)
 
