@@ -141,17 +141,18 @@ Here's the output for the given phrases:
 import re
 import json
 import logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 class GemmaParser:
   
-  def extract_entities(answer):    
+  def extract_entities(answer):
+    json_section_pattern = r'```json[^`]*```'
+    json_section = re.findall(json_section_pattern, answer)[0]
+
     json_pattern = r'[\{\[][.\w\W]*[\]\}]'
-    json_string = re.findall(json_pattern, answer)
+    json_string = re.findall(json_pattern, json_section)
     
-    logger.debug("--->>> JSON String")
-    logger.debug(json_string)
+    logging.debug("--->>> JSON String")
+    logging.debug(json_string)
 
     json_object = json.loads(json_string[0])
 
@@ -168,7 +169,7 @@ class GemmaParser:
       if entity_name != None:
         entities_dict[entity_name] = 1
 
-    entity_list = entities_dict.keys()
+    entity_list = list(entities_dict.keys())
 
     return entity_list
 
@@ -176,19 +177,19 @@ class GemmaParser:
     line_pattern = r'^[*]+.*'
     triples_line = re.findall(line_pattern, answer, re.RegexFlag.M)
 
-    logger.debug("--->>> Lines section")
-    logger.debug(triples_line)
+    logging.debug("--->>> Lines section")
+    logging.debug(triples_line)
 
     triples = []
     for line in triples_line:
       edge_pattern = r'[*]+\d?\.?'
       cleaned_line = re.sub(edge_pattern, "", line)
       
-      logger.debug(cleaned_line)
+      logging.debug(cleaned_line)
       composite_word_patter = r'\b\ \b'
       space_for_underscore = re.sub(composite_word_patter, "_", cleaned_line)
 
-      logger.debug(space_for_underscore)
+      logging.debug(space_for_underscore)
 
       triples.append(space_for_underscore)
     
@@ -199,14 +200,14 @@ class GemmaParser:
     json_section_pattern = r'```json[^`]*```'
     json_section = re.findall(json_section_pattern, answer) 
 
-    logger.debug("--->>> JSON Section")
-    logger.debug(json_section)
+    logging.debug("--->>> JSON Section")
+    logging.debug(json_section)
 
     json_pattern = r'[\{\[][.\w\W]*[\]\}]'
     json_string = re.findall(json_pattern, json_section[0])
     
-    logger.debug("--->>> JSON String")
-    logger.debug(json_string[0])
+    logging.debug("--->>> JSON String")
+    logging.debug(json_string[0])
 
     triples_objects = json.loads(json_string[0])
     triples = []
@@ -222,26 +223,30 @@ class GemmaParser:
     return triples
   
   def extract_relationship(answer):
-    relationships = []
     json_section_pattern = r'```json[^`]*```'
-    json_section = re.findall(json_section_pattern, answer) 
+    json_section = re.findall(json_section_pattern, answer)[0] 
 
-    logger.debug("--->>> JSON Section")
-    logger.debug(json_section)
+    logging.debug("--->>> JSON Section")
+    logging.debug(json_section)
 
-    json_pattern = r'[\{\[][.\w\W]*[\]\}]'
-    json_string = re.findall(json_pattern, json_section[0])
+    json_pattern = r'[\{\[][.\w\W]*[\W]*[\]\}]'
+    json_string = re.findall(json_pattern, json_section)
     
-    logger.debug("--->>> JSON String")
-    logger.debug(json_string[0])
+    logging.debug("--->>> JSON String")
+    logging.debug(json_string[0])
 
     relationship_array = json.loads(json_string[0])
 
-    for relationship_dict in relationship_array:      
-      relationship = next(iter(relationship_dict.values()))
-      relationships.append(relationship)
+    logging.debug("--->>> JSON Object")
+    logging.debug(relationship_array)
+
+    relationships = []
+
+    for relationship_dict in relationship_array:
+      for relationship in iter(relationship_dict.values()):
+        relationships.append(relationship)
 
     return relationships
 
 if __name__ == '__main__':
-  print(GemmaParser.extract_triples_from_lines(sample_answers[-1]))
+  print(GemmaParser.extract_relationship(sample_answers[-1]))
