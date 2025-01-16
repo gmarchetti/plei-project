@@ -9,8 +9,8 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 12
-BATCH_SIZE = 4
+ENTRIES_TO_USE = 1
+BATCH_SIZE = 1
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -20,7 +20,7 @@ model_names = {
 
 dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev", trust_remote_code=True)
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 random_entries = dataset.shuffle().select(range(ENTRIES_TO_USE))
@@ -86,6 +86,20 @@ def relation_prompts_generator(entities_list, processed_entries):
 
         yield prompt_builder.gen_prompt_for_explicit_relations(sentences, entities)
 
+def pruning_prompts_generator(relationship_list, processed_entries):
+    for idx in range(0, len(relationship_list)):
+        entry = random_entries[processed_entries[idx]]
+        sentences = entry["lex"]["text"]
+        relationship = relationship_list[idx]
+        
+        logger.debug(">>>>")
+        logger.debug(f"Testing sentences: {sentences}, with model {model_key}")
+        logger.debug("---")
+        logger.debug(f"Relationships: {relationship}")
+        logger.debug("---")
+
+        yield prompt_builder.gen_prompt_for_relationship_pruning(sentences, relationship)
+
 for model_key in model_names:
 
     pipe = pipeline(
@@ -104,8 +118,8 @@ for model_key in model_names:
     processed_entities = []
     entities_errors = 0
 
-    for outputs in tqdm(pipe(entities_prompts_generator(), max_new_tokens=512, batch_size=BATCH_SIZE)):
-        # logger.info(f"Processing entities from {sentence_count} of {ENTRIES_TO_USE}")
+    logger.info(f">>>> Extracting Entities from sentences <<<<")
+    for outputs in tqdm(pipe(entities_prompts_generator(), max_new_tokens=512, batch_size=BATCH_SIZE), total=ENTRIES_TO_USE):
         generated_response = outputs[0]["generated_text"].strip()
         
         logger.debug("---")
@@ -124,8 +138,9 @@ for model_key in model_names:
     sentence_count = 0
     extract_errors = 0
     
-    for outputs in tqdm(pipe(relation_prompts_generator(extracted_entities_array, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE)):
-        # logger.info(f"Processing relations from {sentence_count} of {len(extracted_entities_array)}")
+    processed_relationships = []
+    logger.info(f">>>> Extracting Relationship from sentences <<<<")
+    for outputs in tqdm(pipe(relation_prompts_generator(extracted_entities_array, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE), total=ENTRIES_TO_USE-entities_errors):
         generated_response = outputs[0]["generated_text"].strip()
         
         logger.debug("--->>> Generated Response for Relationship")
@@ -136,14 +151,35 @@ for model_key in model_names:
             logger.debug(f"Relationships: {extracted_relationships}")
             generated_triplets = build_triplets(extracted_entities_array[sentence_count], extracted_relationships)
             logger.debug(f"Triplets: {generated_triplets}")
+            processed_relationships.append(generated_triplets)
+        except:
+            logging.exception(f">>>Failed to process response:\n {generated_response}")
+            extract_errors += 1
 
-            results.add_result(generated_triplets, entries_metadata[sentence_count]["category"], entries_metadata[sentence_count]["eid"])
+        sentence_count += 1
+
+    sentence_count = 0
+    extract_errors = 0
+    
+    logger.info(f">>>> Extracting Relationship from sentences <<<<")
+    for outputs in tqdm(pipe(pruning_prompts_generator(processed_relationships, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE), total=ENTRIES_TO_USE-(entities_errors + extract_errors)):
+        generated_response = outputs[0]["generated_text"].strip()
+        
+        logger.debug("--->>> Generated Response for Relationship Pruning")
+        logger.debug(generated_response)
+        
+        try:
+            extracted_pruned_triplets = GemmaParser.extract_triples(generated_response)
+            logger.debug(f"Final Triplets: {extracted_pruned_triplets}")
+
+            results.add_result(extracted_pruned_triplets, entries_metadata[sentence_count]["category"], entries_metadata[sentence_count]["eid"])
             results.add_modified_triplets(entries_metadata[sentence_count]["modified_triplets"], entries_metadata[sentence_count]["category"], entries_metadata[sentence_count]["eid"])
         except:
             logging.exception(f">>>Failed to process response:\n {generated_response}")
             extract_errors += 1
 
         sentence_count += 1
+    
     logger.info(f"Total processing time: {time.time() - start_time}s")
     logger.info(f"Total of {extract_errors + entities_errors} entries failed to be processed")
     results.write_results_files()
