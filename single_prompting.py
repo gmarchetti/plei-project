@@ -12,8 +12,9 @@ BATCH_SIZE = 1
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
- "gemma-2" : "google/gemma-2-2b-it",
-#  "llama-3.2" : "meta-llama/Llama-3.2-1B-Instruct"
+#  "gemma-2" : "google/gemma-2-2b-it",
+#  "gemma-2-9" : "google/gemma-2-9b-it",
+ "llama-3.2" : "meta-llama/Llama-3.2-3B-Instruct"
 }
 
 dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev", trust_remote_code=True)

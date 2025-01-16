@@ -25,6 +25,15 @@ Additional instructions that you have to follow:
 Each relation between entities should at most 3 word
 Your output should follow the format: ***Entity | Relationship | Entity 2 ***"""
 
+explicit_relation_prompt = """You are working in an Information Extraction Task.
+Given this list of phrases: {sent} what are the relationship between the following pairs of entities: {ents}
+
+Additional instructions that you have to follow:
+The relationship should be described in a single word
+Each entity of the pair should not contain the word AND
+If no relationship can be established between the entities based on the phrase, mark it as NONE
+Your output should follow the format: {{"Entity | Entity 2" : ***Relationship***}} inside a JSON array"""
+
 class PromptBuilder:
     def concatenate_sentences(sentences):
         concat_sentence = "\n"
@@ -35,6 +44,18 @@ class PromptBuilder:
             idx += 1
         
         return concat_sentence
+
+    def gen_prompt_for_explicit_relations(self, sentences, entities):
+        entities_pairs = []
+        for i in range(len(entities)):
+            for j in range(i, len(entities)):
+                if i != j:
+                    entities_pairs.append(f"{entities[i]} and {entities[j]}")
+
+        concatenated_sentences = PromptBuilder.concatenate_sentences(sentences)
+        concatenated_entities = PromptBuilder.concatenate_sentences(entities_pairs)
+
+        return explicit_relation_prompt.format(sent=concatenated_sentences, ents=concatenated_entities)
 
     def gen_prompt_for_relations(self, sentences, entities):
         concatenated_sentences = PromptBuilder.concatenate_sentences(sentences)

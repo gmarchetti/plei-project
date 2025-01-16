@@ -220,7 +220,28 @@ class GemmaParser:
     else:
       triples.append(f"{triples_objects["object"].replace(" ", "_")} | {triples_objects["relationship"].replace(" ", "_")} | {triples_objects["subject"].replace(" ", "_")}")
     return triples
+  
+  def extract_relationship(answer):
+    relationships = []
+    json_section_pattern = r'```json[^`]*```'
+    json_section = re.findall(json_section_pattern, answer) 
+
+    logger.debug("--->>> JSON Section")
+    logger.debug(json_section)
+
+    json_pattern = r'[\{\[][.\w\W]*[\]\}]'
+    json_string = re.findall(json_pattern, json_section[0])
     
+    logger.debug("--->>> JSON String")
+    logger.debug(json_string[0])
+
+    relationship_array = json.loads(json_string[0])
+
+    for relationship_dict in relationship_array:      
+      relationship = next(iter(relationship_dict.values()))
+      relationships.append(relationship)
+
+    return relationships
 
 if __name__ == '__main__':
   print(GemmaParser.extract_triples_from_lines(sample_answers[-1]))

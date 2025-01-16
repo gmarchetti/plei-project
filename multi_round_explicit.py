@@ -8,8 +8,8 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 100
-BATCH_SIZE = 10
+ENTRIES_TO_USE = 2
+BATCH_SIZE = 1
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -19,7 +19,7 @@ model_names = {
 
 dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev", trust_remote_code=True)
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 random_entries = dataset.shuffle().select(range(ENTRIES_TO_USE))
@@ -48,7 +48,7 @@ def relation_prompts_generator(entities_list, processed_entries):
     for idx in range(0, len(entities_list)):
         entry = random_entries[processed_entries[idx]]
         sentences = entry["lex"]["text"]
-        entities = entities_list[idx]
+        entities = list(entities_list[idx])
         
         logger.debug(">>>>")
         logger.debug(f"Testing sentences: {sentences}, with model {model_key}")
@@ -56,7 +56,7 @@ def relation_prompts_generator(entities_list, processed_entries):
         logger.debug(f"Entities: {entities}")
         logger.debug("---")
 
-        yield prompt_builder.gen_prompt_for_relations(sentences, entities)
+        yield prompt_builder.gen_prompt_for_explicit_relations(sentences, entities)
 
 for model_key in model_names:
 
@@ -67,7 +67,7 @@ for model_key in model_names:
         device="cuda",  # replace with "mps" to run on a Mac device
     )
     
-    results = ResultsBuilder(model_key, "multi")
+    results = ResultsBuilder(model_key, "explicit")
     sentence_count = 0    
 
     start_time = time.time()    
@@ -117,5 +117,5 @@ for model_key in model_names:
         sentence_count += 1
     logger.info(f"Total processing time: {time.time() - start_time}s")
     logger.info(f"Total of {extract_errors + entities_errors} entries failed to be processed")
-    results.write_results_files()
+    # results.write_results_files()
 
