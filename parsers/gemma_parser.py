@@ -252,5 +252,22 @@ class GemmaParser:
 
     return pruned_relations
 
-if __name__ == '__main__':
-  print(GemmaParser.extract_relationship(sample_answers[-1]))
+  def extract_non_json_entities(answer):
+    entities_dict = {}
+
+    entities_line_pattern = r'^[\d]*\. [\w\W\.]*?$'
+    entities_lines = re.findall(entities_line_pattern, answer, re.RegexFlag.M)
+    
+    entity_name_pattern = r'[\d]\.\ [\W\w]*?$'
+
+    logging.debug(f"Lines of entities: {entities_lines}")
+    for line in entities_lines:
+      entity_name = re.findall(entity_name_pattern, line, re.RegexFlag.M)[0]
+      entity_name = re.sub(r'[\d]\.\ +', "", entity_name) #remove number and space from beginning
+      entity_name = re.sub(r'\*', "", entity_name) #remove * surrounding names
+      logging.debug(f"Entities: {entity_name}")
+      entities_dict[entity_name] = 1
+
+    entity_list = list(entities_dict.keys())
+
+    return entity_list

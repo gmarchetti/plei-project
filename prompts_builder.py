@@ -13,6 +13,16 @@ Now for the next sentences, output a JSON object following the same process, cre
 {sent}
 """
 
+non_json_entity_extraction = """
+You are working in an Named Entity Identification Task. Given the following sentences:
+
+{sent}
+
+I want you provide me a numbered list with all the most relevant named entities that are common for all the sentences. The list should include only the names of the entities, the names should marked by *** and the start of the list should be marked by ---.
+
+Entity List:
+"""
+
 entity_extraction_prompt = """
 You are working in an Entity Identification Task. Given the following sentences:
 
@@ -92,6 +102,9 @@ class PromptBuilder:
         concatenated_entities = PromptBuilder.concatenate_sentences(entities)
 
         return relation_extraction_prompt.format(sent=concatenated_sentences, ents=concatenated_entities)
+
+    def gen_prompt_for_nonjson_entity_extraction(self, sentences):
+        return non_json_entity_extraction.format(sent=PromptBuilder.concatenate_sentences(sentences))
 
     def gen_prompt_for_extraction(self, sentences):
         return entity_extraction_prompt.format(sent=PromptBuilder.concatenate_sentences(sentences))

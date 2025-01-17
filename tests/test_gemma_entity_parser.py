@@ -60,7 +60,6 @@ def test_all_relationships_are_expected():
             assert pr in expected_responses[idx]
 
 def test_all_expected_relationships_exists():
-    logging.debug("!!!!")
     for idx in range(len(sample_answers)):
         parsed_response = GemmaParser.extract_entities(sample_answers[idx])
         for er in expected_responses[idx]:

@@ -9,8 +9,8 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 16
-BATCH_SIZE = 8
+ENTRIES_TO_USE = 3
+BATCH_SIZE = 3
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -22,7 +22,7 @@ dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(level=logging.INFO)
+logger.setLevel(level=logging.DEBUG)
 
 
 random_entries = dataset.shuffle().select(range(ENTRIES_TO_USE))
@@ -60,12 +60,11 @@ def build_triplets(entities_list, relationships_list):
 def entities_prompts_generator():
     for entry in entries:
         sentences = entry["lex"]["text"]
-        number_triplets = entry["size"]
         
         logger.debug(">>>>")
         logger.debug(f"Testing sentences:\n{sentences}")                
 
-        yield prompt_builder.gen_prompt_for_extraction(sentences)
+        yield prompt_builder.gen_prompt_for_nonjson_entity_extraction(sentences)
 
 def relation_prompts_generator(entities_list):
     
@@ -128,7 +127,7 @@ for model_key in model_names:
         logger.debug(f">>> Response from entity extraction prompt:\n{generated_response}")
         
         try:
-            extracted_entities_array.append(GemmaParser.extract_entities(generated_response))
+            extracted_entities_array.append(GemmaParser.extract_non_json_entities(generated_response))
             logger.debug(f"Extracted entities: {extracted_entities_array[-1]}")
         except:
             logging.exception(f">>> Failed to process entities <<<\n{generated_response}")
@@ -181,8 +180,11 @@ for model_key in model_names:
             current_entry = entries[sentence_count]
 
             logger.debug(f"Saving results for entry {current_entry}")
-            results.add_result(extracted_pruned_triplets, current_entry["category"], current_entry["eid"])
-            results.add_modified_triplets(current_entry["modified_triple_sets"]["mtriple_set"], current_entry["category"], current_entry["eid"])
+            if (len(extracted_pruned_triplets) > 0):
+                results.add_result(extracted_pruned_triplets, current_entry["category"], current_entry["eid"])
+                results.add_modified_triplets(current_entry["modified_triple_sets"]["mtriple_set"], current_entry["category"], current_entry["eid"])
+            else:
+                raise Exception("Empty relationship triplets")
         except:
             logging.exception(f">>>Failed to process response:\n {generated_response}")
             prune_errors += 1
