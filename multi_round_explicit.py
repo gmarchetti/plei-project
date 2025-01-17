@@ -9,8 +9,8 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 4
-BATCH_SIZE = 1
+ENTRIES_TO_USE = 16
+BATCH_SIZE = 8
 
 model_names = {
 #  "qwen": "Qwen/Qwen2.5-1.5B-Instruct",
@@ -24,11 +24,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
 
+
 random_entries = dataset.shuffle().select(range(ENTRIES_TO_USE))
+entries = [random_entries[idx] for idx in range(ENTRIES_TO_USE)]
 
 prompt_builder = PromptBuilder()
-
-entries_metadata = []
 
 def safe_list_get (l, idx, default):
   try:
@@ -58,23 +58,22 @@ def build_triplets(entities_list, relationships_list):
     return triplets_set
 
 def entities_prompts_generator():
-    for entry in random_entries:
+    for entry in entries:
         sentences = entry["lex"]["text"]
         number_triplets = entry["size"]
         
         logger.debug(">>>>")
-        logger.debug(f"Testing sentences:\n{sentences}")
-        
-        entries_metadata.append({"eid":entry["eid"], "category": entry["category"], "modified_triplets":entry["modified_triple_sets"]["mtriple_set"] })
+        logger.debug(f"Testing sentences:\n{sentences}")                
 
         yield prompt_builder.gen_prompt_for_extraction(sentences)
 
-def relation_prompts_generator(entities_list, processed_entries):
+def relation_prompts_generator(entities_list):
     
     for idx in range(0, len(entities_list)):
-        entry = random_entries[processed_entries[idx]]
-        sentences = entry["lex"]["text"]
         entities = entities_list[idx]
+        entry = entries[idx]
+        
+        sentences = entry["lex"]["text"]
         
         logger.debug(">>>>")
         logger.debug(f"Testing sentences: {sentences}, with model {model_key}")
@@ -84,9 +83,9 @@ def relation_prompts_generator(entities_list, processed_entries):
 
         yield prompt_builder.gen_prompt_for_explicit_relations(sentences, entities)
 
-def pruning_prompts_generator(relationship_list, processed_entries):
+def pruning_prompts_generator(relationship_list):
     for idx in range(0, len(relationship_list)):
-        entry = random_entries[processed_entries[idx]]
+        entry = entries[idx]
         sentences = entry["lex"]["text"]
         relationship = relationship_list[idx]
         
@@ -97,6 +96,12 @@ def pruning_prompts_generator(relationship_list, processed_entries):
         logger.debug("---")
 
         yield prompt_builder.gen_prompt_for_relationship_pruning(sentences, relationship)
+
+def remove_entries_that_failed(list_of_failed):
+    logger.info(f">>> Removing {len(list_of_failed)} entries that failed to process")
+    
+    for idx in reversed(list_of_failed):
+        del entries[idx]
 
 for model_key in model_names:
 
@@ -113,8 +118,8 @@ for model_key in model_names:
     start_time = time.time()    
     
     extracted_entities_array = []
-    processed_entities = []
     entities_errors = 0
+    failed_entries = []
 
     logger.info(f">>>> Extracting Entities from sentences <<<<")
     for outputs in pipe(entities_prompts_generator(), max_new_tokens=256, batch_size=BATCH_SIZE, return_full_text = False, do_sample=True, top_k=3):
@@ -124,21 +129,24 @@ for model_key in model_names:
         
         try:
             extracted_entities_array.append(GemmaParser.extract_entities(generated_response))
-            processed_entities.append(sentence_count)
             logger.debug(f"Extracted entities: {extracted_entities_array[-1]}")
         except:
             logging.exception(f">>> Failed to process entities <<<\n{generated_response}")
+            failed_entries.append(sentence_count)
             entities_errors += 1
 
         sentence_count += 1
 
+    remove_entries_that_failed(failed_entries)
+        
     sentence_count = 0
     extract_errors = 0
     
     processed_relationships = []
     
+    failed_entries = []
     logger.info(f">>>> Extracting Relationship from sentences <<<<")
-    for outputs in pipe(relation_prompts_generator(extracted_entities_array, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE, return_full_text = False, do_sample=True, num_beams=3):
+    for outputs in pipe(relation_prompts_generator(extracted_entities_array), max_new_tokens=512, batch_size=BATCH_SIZE, return_full_text = True):
         generated_response = outputs[0]["generated_text"].strip()
         
         logger.debug(f">>> Response for Relationship Extraction:\n{generated_response}")
@@ -151,15 +159,17 @@ for model_key in model_names:
             processed_relationships.append(generated_triplets)
         except:
             logging.exception(f">>>Failed to process response:\n {generated_response}")
+            failed_entries.append(sentence_count)
             extract_errors += 1
 
         sentence_count += 1
-
+    
+    remove_entries_that_failed(failed_entries)
     sentence_count = 0
     prune_errors = 0
     
     logger.info(f">>>> Pruning extracted Relationship from sentences <<<<")
-    for outputs in pipe(pruning_prompts_generator(processed_relationships, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE, return_full_text = False):
+    for outputs in pipe(pruning_prompts_generator(processed_relationships), max_new_tokens=512, batch_size=BATCH_SIZE, return_full_text = False):
         generated_response = outputs[0]["generated_text"].strip()
         
         logger.debug(f"--->>> Generated Response for Relationship Pruning\n{generated_response}")
@@ -168,8 +178,11 @@ for model_key in model_names:
             extracted_pruned_triplets = GemmaParser.extract_pruned_relationships(generated_response)
             logger.debug(f"Final Triplets: {extracted_pruned_triplets}")
 
-            results.add_result(extracted_pruned_triplets, entries_metadata[sentence_count]["category"], entries_metadata[sentence_count]["eid"])
-            results.add_modified_triplets(entries_metadata[sentence_count]["modified_triplets"], entries_metadata[sentence_count]["category"], entries_metadata[sentence_count]["eid"])
+            current_entry = entries[sentence_count]
+
+            logger.debug(f"Saving results for entry {current_entry}")
+            results.add_result(extracted_pruned_triplets, current_entry["category"], current_entry["eid"])
+            results.add_modified_triplets(current_entry["modified_triple_sets"]["mtriple_set"], current_entry["category"], current_entry["eid"])
         except:
             logging.exception(f">>>Failed to process response:\n {generated_response}")
             prune_errors += 1

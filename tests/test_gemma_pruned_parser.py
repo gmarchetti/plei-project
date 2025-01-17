@@ -86,13 +86,39 @@ Here's a breakdown of the relationships and why they are relevant:
 10. Texas | COUNTRY | United States
 LIST_END
 ```
+""",
+"""
+ ```LIST_START
+LIST_END
+```
+
+
+**Explanation:**
+
+The original list contains several relationships that are not directly relevant to the core information about Arem-arem and its relation to Indonesia and Java.
+
+Here's a breakdown of why some relationships are removed:
+
+* **Relationship 1:** Arem-arem | FOUND_IN | Indonesia - This is a direct relationship, but it's not the most important.
+* **Relationship 2:** Arem-arem | SPECIFIC_TO | Java - This is a direct relationship, but it's not the most important.
+* **Relationship 3:** Indonesia | LEADER_OF | Jusuf Kalla - This is a direct relationship, but it's not the most important.
+* **Relationship 4:** Java | LEADER_OF | Jusuf Kalla - This is a direct relationship, but it's not the most important.
+
+**Final List:**
+
+```LIST_START
+Arem-arem | FOUND_IN | Indonesia
+Arem-arem | SPECIFIC_TO | Java
+Indonesia | LEADER_OF | Jusuf Kalla
+```
 """
 ]
 
 expected_responses = [
     ["Helena | OBJECT | 101 Helena"],
     ["Julia Morgan | BORN_IN | California", "Julia Morgan | DESIGNED | Asilomar Conference Grounds", "Julia Morgan | DESIGNED | Los Angeles Herald Examiner building","Julia Morgan | DESIGNED | The Riverside Art Museum", "Julia Morgan | DESIGNED | Hearst Castle", "California | LOCATED_IN | Asilomar Conference Grounds", "California | LOCATED_IN | Los Angeles Herald Examiner building","California | LOCATED_IN | The Riverside Art Museum", "California | LOCATED_IN | Hearst Castle", "Asilomar Conference Grounds | PART_OF | Los Angeles Herald Examiner building", "Asilomar Conference Grounds | PART_OF | The Riverside Art Museum", "Asilomar Conference Grounds | PART_OF | Hearst Castle"],
-    [ "Abilene Regional Airport | LOCATION | Abilene", "Abilene Regional Airport | PART_OF | Taylor County", "Abilene Regional Airport | STATE | Texas", "Abilene Regional Airport | COUNTRY | United States", "Abilene | PART_OF | Taylor County", "Abilene | STATE | Texas", "Abilene | COUNTRY | United States", "Taylor County | PART_OF | Texas", "Taylor County | COUNTRY | United States", "Texas | COUNTRY | United States"]
+    [ "Abilene Regional Airport | LOCATION | Abilene", "Abilene Regional Airport | PART_OF | Taylor County", "Abilene Regional Airport | STATE | Texas", "Abilene Regional Airport | COUNTRY | United States", "Abilene | PART_OF | Taylor County", "Abilene | STATE | Texas", "Abilene | COUNTRY | United States", "Taylor County | PART_OF | Texas", "Taylor County | COUNTRY | United States", "Texas | COUNTRY | United States"],
+    ["Arem-arem | FOUND_IN | Indonesia", "Arem-arem | SPECIFIC_TO | Java", "Indonesia | LEADER_OF | Jusuf Kalla"]
 ]
 
 import logging

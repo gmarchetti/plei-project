@@ -203,7 +203,6 @@ class GemmaParser:
     
     return triples
 
-
   def extract_triples(answer):
     triples_objects = GemmaParser.__build_json_object(answer)
 
@@ -235,13 +234,13 @@ class GemmaParser:
 
   def extract_pruned_relationships(answer):    
     pruned_relations = []
-    final_list_pattern = r'[`]+LIST_START[`]*\s[\d][\W\w.]*[`]'
-    final_list_region = re.findall(final_list_pattern, answer)[0]
+    final_list_pattern = r'[`]+LIST_START[`]*\s^[\d]*[\W\w.]+[`]'
+    final_list_region = re.findall(final_list_pattern, answer, re.RegexFlag.M)[0]
 
     logging.debug("--->>> LIST REGION")
     logging.debug(final_list_region)
 
-    list_of_matches_pattern = r'[\d]+\.[\w\ ]*\|[\w\ ]*\|[\w\ ]*'
+    list_of_matches_pattern = r'^[\d]*\.*[\w\ \_\-]*\|[\w\ \_\-]*\|[\w\ \_\-]*$'
     list_of_matches = re.findall(list_of_matches_pattern, final_list_region, re.RegexFlag.M)
 
     logging.debug(f"List of matched lines: {list_of_matches}")
