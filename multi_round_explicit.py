@@ -9,7 +9,7 @@ from transformers import pipeline
 from datasets import load_dataset
 from results.result_file_builder import ResultsBuilder
 
-ENTRIES_TO_USE = 1
+ENTRIES_TO_USE = 4
 BATCH_SIZE = 1
 
 model_names = {
@@ -20,8 +20,9 @@ model_names = {
 
 dataset = load_dataset("webnlg-challenge/web_nlg", "release_v3.0_en", split="dev", trust_remote_code=True)
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.INFO)
 
 random_entries = dataset.shuffle().select(range(ENTRIES_TO_USE))
 
@@ -62,10 +63,7 @@ def entities_prompts_generator():
         number_triplets = entry["size"]
         
         logger.debug(">>>>")
-        logger.debug(f"Testing sentences: {sentences}, with model {model_key}")
-        logger.debug("---")
-        logger.debug(f"Number of triplets expected: {number_triplets}")
-        logger.debug("---")
+        logger.debug(f"Testing sentences:\n{sentences}")
         
         entries_metadata.append({"eid":entry["eid"], "category": entry["category"], "modified_triplets":entry["modified_triple_sets"]["mtriple_set"] })
 
@@ -119,11 +117,10 @@ for model_key in model_names:
     entities_errors = 0
 
     logger.info(f">>>> Extracting Entities from sentences <<<<")
-    for outputs in tqdm(pipe(entities_prompts_generator(), max_new_tokens=512, batch_size=BATCH_SIZE), total=ENTRIES_TO_USE):
+    for outputs in pipe(entities_prompts_generator(), max_new_tokens=256, batch_size=BATCH_SIZE, return_full_text = False, do_sample=True, top_k=3):
         generated_response = outputs[0]["generated_text"].strip()
         
-        logger.debug("---")
-        logger.debug(generated_response)
+        logger.debug(f">>> Response from entity extraction prompt:\n{generated_response}")
         
         try:
             extracted_entities_array.append(GemmaParser.extract_entities(generated_response))
@@ -139,18 +136,18 @@ for model_key in model_names:
     extract_errors = 0
     
     processed_relationships = []
+    
     logger.info(f">>>> Extracting Relationship from sentences <<<<")
-    for outputs in tqdm(pipe(relation_prompts_generator(extracted_entities_array, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE), total=ENTRIES_TO_USE-entities_errors):
+    for outputs in pipe(relation_prompts_generator(extracted_entities_array, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE, return_full_text = False, do_sample=True, num_beams=3):
         generated_response = outputs[0]["generated_text"].strip()
         
-        logger.debug("--->>> Generated Response for Relationship")
-        logger.debug(generated_response)
+        logger.debug(f">>> Response for Relationship Extraction:\n{generated_response}")
         
         try:
             extracted_relationships = GemmaParser.extract_relationship(generated_response)
-            logger.debug(f"Relationships: {extracted_relationships}")
+            logger.debug(f">> Relationships:\n {extracted_relationships}")
             generated_triplets = build_triplets(extracted_entities_array[sentence_count], extracted_relationships)
-            logger.debug(f"Triplets: {generated_triplets}")
+            logger.debug(f">> Triplets:\n {generated_triplets}")
             processed_relationships.append(generated_triplets)
         except:
             logging.exception(f">>>Failed to process response:\n {generated_response}")
@@ -159,28 +156,27 @@ for model_key in model_names:
         sentence_count += 1
 
     sentence_count = 0
-    extract_errors = 0
+    prune_errors = 0
     
-    logger.info(f">>>> Extracting Relationship from sentences <<<<")
-    for outputs in tqdm(pipe(pruning_prompts_generator(processed_relationships, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE), total=ENTRIES_TO_USE-(entities_errors + extract_errors)):
+    logger.info(f">>>> Pruning extracted Relationship from sentences <<<<")
+    for outputs in pipe(pruning_prompts_generator(processed_relationships, processed_entities), max_new_tokens=512, batch_size=BATCH_SIZE, return_full_text = False):
         generated_response = outputs[0]["generated_text"].strip()
         
-        logger.debug("--->>> Generated Response for Relationship Pruning")
-        logger.debug(generated_response)
+        logger.debug(f"--->>> Generated Response for Relationship Pruning\n{generated_response}")
         
         try:
-            extracted_pruned_triplets = GemmaParser.extract_triples(generated_response)
+            extracted_pruned_triplets = GemmaParser.extract_pruned_relationships(generated_response)
             logger.debug(f"Final Triplets: {extracted_pruned_triplets}")
 
             results.add_result(extracted_pruned_triplets, entries_metadata[sentence_count]["category"], entries_metadata[sentence_count]["eid"])
             results.add_modified_triplets(entries_metadata[sentence_count]["modified_triplets"], entries_metadata[sentence_count]["category"], entries_metadata[sentence_count]["eid"])
         except:
             logging.exception(f">>>Failed to process response:\n {generated_response}")
-            extract_errors += 1
+            prune_errors += 1
 
         sentence_count += 1
     
     logger.info(f"Total processing time: {time.time() - start_time}s")
-    logger.info(f"Total of {extract_errors + entities_errors} entries failed to be processed")
+    logger.info(f"Total of {extract_errors + entities_errors + prune_errors} entries failed to be processed")
     results.write_results_files()
 

@@ -14,8 +14,11 @@ Now for the next sentences, output a JSON object following the same process, cre
 """
 
 entity_extraction_prompt = """
-You are working in an Entity Identification Task. 
-I want you to list  all entities from the following sentences: {sent}. 
+You are working in an Entity Identification Task. Given the following sentences:
+
+{sent}
+
+I want you to list all the named entities from the sentences.
 Your output should be a JSON array"""
 
 relation_extraction_prompt = """
@@ -34,21 +37,26 @@ Additional instructions that you have to follow:
 The relationship should be described in a single word
 Each entity of the pair should not contain the word AND
 If no relationship can be established between the entities based on the phrase, mark it as NONE
-Your output should follow the format: {{"Entity | Entity 2" : ***Relationship***}} inside a JSON array"""
+Your output should follow the format: {{"Entity | Entity 2" : ***Relationship***}} inside a JSON array
+
+Relationship List:"""
 
 relationship_pruning_prompt = """
 You are working in an Information Extraction Task.
 Given this list of phrases:
 {sent}
 
-Remove the least relevant relationships from the following list
+Remove the least relevant relationships from the following list:
 {rels}
 
 Additional instructions that you have to follow:
 Each entity of the pair should not contain the word AND
 No new relationship should be added
 The list should be smaller than the original one
-The output format should be inside a JSON object
+Limit your response to a maximum of 300 tokens
+The final list should be start with ```LIST_START and end with LIST_END```
+
+Reduced list:
 """
 
 class PromptBuilder:

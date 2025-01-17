@@ -144,17 +144,25 @@ import logging
 
 class GemmaParser:
   
-  def extract_entities(answer):
+  def __build_json_object(answer):
     json_section_pattern = r'```json[^`]*```'
-    json_section = re.findall(json_section_pattern, answer)[0]
+    json_section = re.findall(json_section_pattern, answer)[0] 
 
-    json_pattern = r'[\{\[][.\w\W]*[\]\}]'
+    logging.debug("--->>> JSON Section")
+    logging.debug(json_section)
+
+    json_pattern = r'[\{\[][.\w\W]*[\W]*[\]\}]'
     json_string = re.findall(json_pattern, json_section)
     
     logging.debug("--->>> JSON String")
-    logging.debug(json_string)
+    logging.debug(json_string[0])
 
     json_object = json.loads(json_string[0])
+
+    return json_object
+  
+  def extract_entities(answer):
+    json_object = GemmaParser.__build_json_object(answer)
 
     entities_dict = {}
 
@@ -197,19 +205,8 @@ class GemmaParser:
 
 
   def extract_triples(answer):
-    json_section_pattern = r'```json[^`]*```'
-    json_section = re.findall(json_section_pattern, answer) 
+    triples_objects = GemmaParser.__build_json_object(answer)
 
-    logging.debug("--->>> JSON Section")
-    logging.debug(json_section)
-
-    json_pattern = r'[\{\[][.\w\W]*[\]\}]'
-    json_string = re.findall(json_pattern, json_section[0])
-    
-    logging.debug("--->>> JSON String")
-    logging.debug(json_string[0])
-
-    triples_objects = json.loads(json_string[0])
     triples = []
 
     if isinstance(triples_objects, list):
@@ -223,19 +220,7 @@ class GemmaParser:
     return triples
   
   def extract_relationship(answer):
-    json_section_pattern = r'```json[^`]*```'
-    json_section = re.findall(json_section_pattern, answer)[0] 
-
-    logging.debug("--->>> JSON Section")
-    logging.debug(json_section)
-
-    json_pattern = r'[\{\[][.\w\W]*[\W]*[\]\}]'
-    json_string = re.findall(json_pattern, json_section)
-    
-    logging.debug("--->>> JSON String")
-    logging.debug(json_string[0])
-
-    relationship_array = json.loads(json_string[0])
+    relationship_array = GemmaParser.__build_json_object(answer)
 
     logging.debug("--->>> JSON Object")
     logging.debug(relationship_array)
@@ -247,6 +232,26 @@ class GemmaParser:
         relationships.append(relationship)
 
     return relationships
+
+  def extract_pruned_relationships(answer):    
+    pruned_relations = []
+    final_list_pattern = r'[`]+LIST_START[`]*\s[\d][\W\w.]*[`]'
+    final_list_region = re.findall(final_list_pattern, answer)[0]
+
+    logging.debug("--->>> LIST REGION")
+    logging.debug(final_list_region)
+
+    list_of_matches_pattern = r'[\d]+\.[\w\ ]*\|[\w\ ]*\|[\w\ ]*'
+    list_of_matches = re.findall(list_of_matches_pattern, final_list_region, re.RegexFlag.M)
+
+    logging.debug(f"List of matched lines: {list_of_matches}")
+
+    for line in list_of_matches:
+      logging.debug(f"Parsing relationship from line: {line}")
+      relationship = re.sub(r'[\d]+\.\s', "", line)
+      pruned_relations.append(relationship)
+
+    return pruned_relations
 
 if __name__ == '__main__':
   print(GemmaParser.extract_relationship(sample_answers[-1]))
